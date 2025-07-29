@@ -7,13 +7,13 @@ name = "pypi"
 flask = "==3.0.3"
 flask-sqlalchemy = "*"
 flask-migrate = "*"
-sqlalchemy-serializer = "==1.4.11"
 flask-restful = "*"
 flask-cors = "==5.0.0"
 flask-jwt-extended = "==4.6.0"
 python-dotenv = "==1.0.1"
 flask-bcrypt = "*"
 faker = "*"
+sqlalchemy-serializer = "*"
 
 [dev-packages]
 
