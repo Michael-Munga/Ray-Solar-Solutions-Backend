@@ -10,6 +10,8 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
 
 from models import db
+# ==== Import and Register Resources
+from resources.auth import AuthResource
 
 # ==== Load environment variables ====
 load_dotenv()
@@ -52,6 +54,7 @@ def expired_token_callback(jwt_header, jwt_payload):
     return {"message": "Token expired"}, 401
 
 # ==== API Endpoints go here ==
+api.add_resource(AuthResource, '/auth/<string:action>')
 
 
 # ==== Entry Point ====
