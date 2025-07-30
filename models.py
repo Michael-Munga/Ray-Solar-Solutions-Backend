@@ -183,3 +183,14 @@ class SupportTicket(db.Model, SerializerMixin):
     user = db.relationship('User', back_populates='tickets')
 
     serialize_only = ("id", "subject", "message", "response", "status", "created_at", "user_id")
+
+class Transaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    phone = db.Column(db.String(20), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    checkout_request_id = db.Column(db.String(100), unique=True)
+    merchant_request_id = db.Column(db.String(100))
+    result_code = db.Column(db.String(10))
+    result_desc = db.Column(db.String(255))
+    status = db.Column(db.String(20))  
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -30,7 +30,7 @@ def lipa_na_mpesa(phone, amount):
         "PartyA": phone,
         "PartyB": shortcode,
         "PhoneNumber": phone,
-        "CallBackURL": os.getenv("MPESA_CALLBACK_URL"),
+        "CallBackURL": "https://7c1917eed3fb.ngrok-free.app",
         "AccountReference": "SolarPower",
         "TransactionDesc": "Energy Payment"
     }
