@@ -12,6 +12,8 @@ from flask_jwt_extended import JWTManager
 from models import db
 # ==== Import and Register Resources
 from resources.auth import AuthResource
+from resources.cart import CartResource, CartItemResource
+from resources.product_resource import ProductListResource
 
 # ==== Load environment variables ====
 load_dotenv()
@@ -55,6 +57,10 @@ def expired_token_callback(jwt_header, jwt_payload):
 
 # ==== API Endpoints go here ==
 api.add_resource(AuthResource, '/auth/<string:action>')
+
+api.add_resource(CartResource, "/api/cart")
+api.add_resource(CartItemResource, "/api/cart/<int:item_id>")
+api.add_resource(ProductListResource, "/api/products")
 
 
 # ==== Entry Point ====
