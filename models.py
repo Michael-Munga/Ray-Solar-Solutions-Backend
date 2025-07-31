@@ -126,6 +126,20 @@ class Product(db.Model, SerializerMixin):
     )
     serialize_rules = ("-provider.products", "-order_items.product", "-tags.products")
 
+class Purchase(db.Model):
+    __tablename__ = 'purchases'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+    total_price = db.Column(db.Float)
+    status = db.Column(db.String(50), default="pending")  # e.g. pending, paid, delivered
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='purchases')
+    product = db.relationship('Product', backref='purchases')
+
 
 # ================================================
 # 4. ORDER MODEL – Cart + Checkout History
