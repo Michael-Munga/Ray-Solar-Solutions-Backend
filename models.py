@@ -28,20 +28,18 @@ class User(db.Model, SerializerMixin):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
 
-    role = db.Column(db.String(20), nullable=False, default='customer')  # customer, provider, admin
-    is_approved = db.Column(db.Boolean, default=False)  # Only matters for providers
+    role = db.Column(db.String(20), nullable=False, default='customer')
+    is_approved = db.Column(db.Boolean, default=False)
 
     # Relationships
     products = db.relationship('Product', back_populates='provider', cascade="all, delete-orphan")
     orders = db.relationship('Order', back_populates='customer')
     tickets = db.relationship('SupportTicket', back_populates='user')
 
-    
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
 
-    # Password hashing methods
     def set_password(self, raw_password):
         from flask_bcrypt import generate_password_hash
         self.password_hash = generate_password_hash(raw_password).decode('utf-8')
@@ -50,7 +48,6 @@ class User(db.Model, SerializerMixin):
         from flask_bcrypt import check_password_hash
         return check_password_hash(self.password_hash, raw_password)
 
-    # Email format validation
     @validates("email")
     def validate_email(self, _, value):
         value = value.lower().strip()
@@ -58,7 +55,6 @@ class User(db.Model, SerializerMixin):
             raise ValueError("Invalid email")
         return value
 
-    # Serialization rules
     serialize_only = ("id", "first_name", "last_name", "email", "role", "is_approved")
     serialize_rules = ("-password_hash", "-products.provider", "-orders.customer", "-tickets.user")
 
@@ -82,7 +78,21 @@ class Tag(db.Model, SerializerMixin):
 
 
 # ==================================================
-# 3. PRODUCT MODEL – Public-facing listing
+# 3. CATEGORY MODEL – Product categories
+# ==================================================
+class Category(db.Model, SerializerMixin):
+    __tablename__ = 'categories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+
+    products = db.relationship('Product', back_populates='category', cascade="all, delete-orphan")
+
+    serialize_only = ("id", "name")
+
+
+# ==================================================
+# 4. PRODUCT MODEL – Public-facing listing
 # ==================================================
 class Product(db.Model, SerializerMixin):
     __tablename__ = 'products'
@@ -94,13 +104,11 @@ class Product(db.Model, SerializerMixin):
 
     image_url = db.Column(db.String)
 
-    # Specifications
     wattage = db.Column(db.String)
     duration = db.Column(db.String)
     warranty_period = db.Column(db.String)
     stock = db.Column(db.Integer, default=0)
 
-    # Pricing
     price = db.Column(db.Float, nullable=False)
     original_price = db.Column(db.Float)
     rating = db.Column(db.Float, default=0)
@@ -108,38 +116,37 @@ class Product(db.Model, SerializerMixin):
     is_popular = db.Column(db.Boolean, default=False)
 
     provider_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
 
-    # Relationships
     provider = db.relationship('User', back_populates='products')
     tags = db.relationship('Tag', secondary=product_tags, back_populates='products')
     order_items = db.relationship('OrderItem', back_populates='product')
+    category = db.relationship('Category', back_populates='products')
 
     @property
     def provider_name(self):
         return self.provider.full_name if self.provider else "Unknown"
 
-    # Serialization
     serialize_only = (
         "id", "name", "short_description", "description", "price", "original_price",
         "rating", "num_reviews", "image_url", "wattage", "duration", "warranty_period",
-        "stock", "is_popular", "provider_id", "provider_name", "tags.name"
+        "stock", "is_popular", "provider_id", "provider_name", "tags.name", "category_id", "category.name"
     )
-    serialize_rules = ("-provider.products", "-order_items.product", "-tags.products")
+    serialize_rules = ("-provider.products", "-order_items.product", "-tags.products", "-category.products")
 
 
 # ================================================
-# 4. ORDER MODEL – Cart + Checkout History
+# 5. ORDER MODEL – Cart + Checkout History
 # ================================================
 class Order(db.Model, SerializerMixin):
     __tablename__ = 'orders'
 
     id = db.Column(db.Integer, primary_key=True)
-    status = db.Column(db.String(50), default='pending')  # pending, paid, shipped, delivered
+    status = db.Column(db.String(50), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     customer_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    # Relationships
     customer = db.relationship('User', back_populates='orders')
     items = db.relationship('OrderItem', back_populates='order', cascade="all, delete-orphan")
 
@@ -157,7 +164,6 @@ class OrderItem(db.Model, SerializerMixin):
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'))
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
 
-    # Relationships
     order = db.relationship('Order', back_populates='items')
     product = db.relationship('Product', back_populates='order_items')
 
@@ -165,7 +171,7 @@ class OrderItem(db.Model, SerializerMixin):
 
 
 # ====================================================
-# 5. SUPPORT TICKET MODEL – Help Desk Messaging
+# 6. SUPPORT TICKET MODEL – Help Desk Messaging
 # ====================================================
 class SupportTicket(db.Model, SerializerMixin):
     __tablename__ = 'support_tickets'
@@ -174,12 +180,36 @@ class SupportTicket(db.Model, SerializerMixin):
     subject = db.Column(db.String(255), nullable=False)
     message = db.Column(db.Text, nullable=False)
     response = db.Column(db.Text)
-    status = db.Column(db.String(50), default='open')  # open, responded, closed
+    status = db.Column(db.String(50), default='open')
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    # Relationships
     user = db.relationship('User', back_populates='tickets')
 
     serialize_only = ("id", "subject", "message", "response", "status", "created_at", "user_id")
+
+
+# ===========================================
+# 7. CART ITEM MODEL – User's current cart
+# ===========================================
+class CartItem(db.Model, SerializerMixin):
+    __tablename__ = 'cart_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+    price = db.Column(db.Float, nullable=False)
+
+    name = db.Column(db.String(120))
+    image = db.Column(db.String)
+
+    user = db.relationship('User', backref='cart_items')
+    product = db.relationship('Product')
+
+    serialize_only = (
+        "id", "user_id", "product_id", "quantity", "price", "name", "image"
+    )
