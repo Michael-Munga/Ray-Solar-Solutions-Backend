@@ -27,6 +27,7 @@ class User(db.Model, SerializerMixin):
 
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    phone = db.Column(db.String(20))
 
     role = db.Column(db.String(20), nullable=False, default='customer')
     is_approved = db.Column(db.Boolean, default=False)
@@ -55,7 +56,7 @@ class User(db.Model, SerializerMixin):
             raise ValueError("Invalid email")
         return value
 
-    serialize_only = ("id", "first_name", "last_name", "email", "role", "is_approved")
+    serialize_only = ("id", "first_name", "last_name", "email", "phone", "role", "is_approved")
     serialize_rules = ("-password_hash", "-products.provider", "-orders.customer", "-tickets.user")
 
 
@@ -191,7 +192,34 @@ class SupportTicket(db.Model, SerializerMixin):
 
 
 # ===========================================
-# 7. CART ITEM MODEL – User's current cart
+# 7. TRANSACTION MODEL – M-Pesa transactions
+# ===========================================
+class Transaction(db.Model, SerializerMixin):
+    __tablename__ = 'transaction'
+
+    id = db.Column(db.Integer, primary_key=True)
+    phone = db.Column(db.String(20), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    checkout_request_id = db.Column(db.String(100), unique=True)
+    merchant_request_id = db.Column(db.String(100))
+    result_code = db.Column(db.String(10))
+    result_desc = db.Column(db.String(255))
+    status = db.Column(db.String(20))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    # Add user relationship
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship('User', backref='transactions')
+
+    serialize_only = (
+        "id", "phone", "amount", "checkout_request_id", 
+        "merchant_request_id", "result_code", "result_desc", 
+        "status", "created_at", "user_id"
+    )
+
+
+# ===========================================
+# 8. CART ITEM MODEL – User's current cart
 # ===========================================
 class CartItem(db.Model, SerializerMixin):
     __tablename__ = 'cart_items'
